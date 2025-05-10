@@ -14,6 +14,9 @@ class CFKycVerificationViewController: UIViewController {
     // Replace IBOutlet with a regular property
     private var kycWebView: WKWebView!
     
+    // Reference to webView's scrollView for controlling scrolling behavior
+    private var webViewScrollView: UIScrollView?
+    
     // Activity indicator for loading state
     private lazy var activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .large)
@@ -49,20 +52,52 @@ class CFKycVerificationViewController: UIViewController {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
         
+        // Disable Picture in Picture (PIP) mode
+        if #available(iOS 14.0, *) {
+            configuration.allowsPictureInPictureMediaPlayback = false
+        }
+        
+        // Add a viewport meta tag script to ensure proper scaling
+        let viewportScript = WKUserScript(
+            source: "var meta = document.createElement('meta'); meta.setAttribute('name', 'viewport'); meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'); document.getElementsByTagName('head')[0].appendChild(meta);",
+            injectionTime: .atDocumentEnd,
+            forMainFrameOnly: true
+        )
+        configuration.userContentController.addUserScript(viewportScript)
+        
         kycWebView = WKWebView(frame: .zero, configuration: configuration)
         kycWebView.translatesAutoresizingMaskIntoConstraints = false
         kycWebView.allowsBackForwardNavigationGestures = false
+        
+        // Fix scrolling issues by accessing scrollView
+        webViewScrollView = kycWebView.scrollView
+        webViewScrollView?.bounces = false
+        webViewScrollView?.showsHorizontalScrollIndicator = false
+        webViewScrollView?.showsVerticalScrollIndicator = true
+        
+        // Set content inset adjustment behavior to prevent content going under safe areas
+        if #available(iOS 11.0, *) {
+            webViewScrollView?.contentInsetAdjustmentBehavior = .never
+        }
+        
+        // Disable zooming for KYC verification flow
+        webViewScrollView?.minimumZoomScale = 1.0
+        webViewScrollView?.maximumZoomScale = 1.0
+        
         view.addSubview(kycWebView)
         
         // Add activity indicator
         view.addSubview(activityIndicator)
         
-        // Add constraints to make the web view fill the entire view
+        // Updated constraints:
+        // - Top respects safe area
+        // - Left and right go to the edge
+        // - Bottom now respects safe area to prevent going outside the screen
         NSLayoutConstraint.activate([
-            kycWebView.topAnchor.constraint(equalTo: view.topAnchor),
+            kycWebView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             kycWebView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             kycWebView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            kycWebView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            kycWebView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
             // Center the activity indicator
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -72,6 +107,11 @@ class CFKycVerificationViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Disable PIP at runtime as well (backup approach)
+        if #available(iOS 14.2, *) {
+            kycWebView.configuration.allowsPictureInPictureMediaPlayback = false
+        }
         
         // Start loading animation
         activityIndicator.startAnimating()
@@ -102,6 +142,12 @@ class CFKycVerificationViewController: UIViewController {
         
         // Ensure navigation bar is hidden when returning to this view
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        
+        // Adjust safe area insets to prevent content from going under system UI
+        if #available(iOS 11.0, *) {
+            // Update content insets to match safe area
+            webViewScrollView?.contentInset = view.safeAreaInsets
+        }
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -109,6 +155,15 @@ class CFKycVerificationViewController: UIViewController {
         
         // Clean up web view
         kycWebView.stopLoading()
+    }
+    
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        
+        if #available(iOS 11.0, *) {
+            // Update content insets when safe area changes (e.g., orientation changes)
+            webViewScrollView?.contentInset = view.safeAreaInsets
+        }
     }
     
     deinit {
@@ -262,6 +317,26 @@ class CFKycVerificationViewController: UIViewController {
             }
         }
     }
+    
+    // Helper method to fix content size issues
+    private func applyContentSizeFixesToWebView() {
+        let js = """
+        var style = document.createElement('style');
+        style.textContent = 'body { width: 100%; height: auto; margin: 0; padding: 0; overflow-x: hidden; } html { overflow-x: hidden; }';
+        document.getElementsByTagName('head')[0].appendChild(style);
+        """
+        kycWebView.evaluateJavaScript(js, completionHandler: nil)
+        
+        // Ensure content fits width
+        kycWebView.evaluateJavaScript("document.documentElement.scrollWidth") { [weak self] (width, error) in
+            guard let self = self, let contentWidth = width as? CGFloat else { return }
+            
+            if contentWidth > self.kycWebView.frame.size.width {
+                let zoom = self.kycWebView.frame.size.width / contentWidth
+                self.kycWebView.evaluateJavaScript("document.documentElement.style.zoom = \(zoom)", completionHandler: nil)
+            }
+        }
+    }
 }
 
 // MARK: - WKNavigationDelegate & WKUIDelegate
@@ -273,6 +348,9 @@ extension CFKycVerificationViewController: WKNavigationDelegate, WKUIDelegate {
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         activityIndicator.stopAnimating()
+        
+        // Apply fixes for content size issues
+        applyContentSizeFixesToWebView()
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
