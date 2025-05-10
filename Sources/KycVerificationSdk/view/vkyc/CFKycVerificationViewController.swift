@@ -25,7 +25,7 @@ class CFKycVerificationViewController: UIViewController {
         self.responseDelegate = delegate
         
         #if SWIFT_PACKAGE
-        // Using Bundle.module for Swift Package Manager builds
+      
         let nibName = "CFKycVerificationViewController"
         let bundle = Bundle.module
         
