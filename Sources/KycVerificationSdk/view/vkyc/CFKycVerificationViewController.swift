@@ -75,11 +75,9 @@ class CFKycVerificationViewController: UIViewController {
         webViewScrollView?.showsHorizontalScrollIndicator = false
         webViewScrollView?.showsVerticalScrollIndicator = true
         
-        // Adjust scroll behavior to handle content properly
-        if #available(iOS 11.0, *) {
-            // This is crucial to prevent content from going under status bar
-            webViewScrollView?.contentInsetAdjustmentBehavior = .scrollableAxes
-        }
+        // Disable zooming for KYC verification flow
+        webViewScrollView?.minimumZoomScale = 1.0
+        webViewScrollView?.maximumZoomScale = 1.0
         
         // Disable zooming for KYC verification flow
         webViewScrollView?.minimumZoomScale = 1.0
@@ -91,7 +89,6 @@ class CFKycVerificationViewController: UIViewController {
         view.addSubview(activityIndicator)
         
         // Set up constraints based on the Interface Builder layout
-        // We want to match the visual layout but fix the scrolling issues
         NSLayoutConstraint.activate([
             // Center horizontally (matching Web View.centerX = centerX)
             kycWebView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -103,8 +100,8 @@ class CFKycVerificationViewController: UIViewController {
             // Top to top edge of screen (full screen, not safe area)
             kycWebView.topAnchor.constraint(equalTo: view.topAnchor),
             
-            // Bottom with the Safe Area (to prevent going under home indicator)
-            kycWebView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            // Bottom to bottom of view with padding
+            kycWebView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -70),
             
             // Center the activity indicator
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -318,30 +315,11 @@ class CFKycVerificationViewController: UIViewController {
     
     // Helper method to fix content size issues
     private func applyContentSizeFixesToWebView() {
-        // Add proper padding to ensure content at bottom is visible (especially footers)
+        // Much simpler CSS - just add padding to the bottom of the page
         let js = """
-        (function() {
-            // Create style element for general fixes
-            var style = document.createElement('style');
-            style.textContent = 'body { width: 100%; height: auto; margin: 0; padding: 0 0 50px 0; overflow-x: hidden; } html { overflow-x: hidden; }';
-            document.getElementsByTagName('head')[0].appendChild(style);
-            
-            // Add padding to any footer or bottom elements
-            var footerElements = document.querySelectorAll('[class*="footer"], [id*="footer"], [class*="bottom"], [id*="bottom"], [class*="powered"], [id*="powered"]');
-            for (var i = 0; i < footerElements.length; i++) {
-                footerElements[i].style.marginBottom = '50px';
-            }
-            
-            // Add observer to handle dynamic content
-            var observer = new MutationObserver(function(mutations) {
-                var footerElements = document.querySelectorAll('[class*="footer"], [id*="footer"], [class*="bottom"], [id*="bottom"], [class*="powered"], [id*="powered"]');
-                for (var i = 0; i < footerElements.length; i++) {
-                    footerElements[i].style.marginBottom = '50px';
-                }
-            });
-            
-            observer.observe(document.body, { childList: true, subtree: true });
-        })();
+        var style = document.createElement('style');
+        style.textContent = 'body { width: 100%; height: auto; margin: 0; padding: 0 0 70px 0; overflow-x: hidden; } html { overflow-x: hidden; }';
+        document.getElementsByTagName('head')[0].appendChild(style);
         """
         kycWebView.evaluateJavaScript(js, completionHandler: nil)
         
