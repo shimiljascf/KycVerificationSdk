@@ -1,6 +1,4 @@
-// swift-tools-version: 6.0
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-// swift-tools-version:5.3  // Specify an older Swift version here
+// swift-tools-version:5.3
 
 import PackageDescription
 
@@ -18,9 +16,8 @@ let package = Package(
         .target(
             name: "KycVerificationSdk",
             swiftSettings: [
-                .define("SWIFT_SUPPRESS_WARNINGS"),
-                // You can also explicitly set Swift version for the target
-                .unsafeFlags(["-swift-version", "5.3"])
+                .define("SWIFT_SUPPRESS_WARNINGS")
+                // Removed the unsafe flags that were causing the error
             ]),
     ],
     swiftLanguageVersions: [.v5] // This specifies compatible Swift versions
