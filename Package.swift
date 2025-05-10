@@ -15,6 +15,12 @@ let package = Package(
     targets: [
         .target(
             name: "KycVerificationSdk",
+            resources: [
+                // Include all resources in the vkyc directory
+                .process("KycVerificationSdk/vkyc"),
+                // Also specifically include the NIB file that's causing the error
+                .process("KycVerificationSdk/vkyc/CFKycVerificationViewController.xib")
+            ],
             swiftSettings: [
                 .define("SWIFT_SUPPRESS_WARNINGS")
                 // Removed the unsafe flags that were causing the error
