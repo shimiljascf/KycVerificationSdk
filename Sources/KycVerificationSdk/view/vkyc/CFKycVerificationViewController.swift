@@ -75,9 +75,10 @@ class CFKycVerificationViewController: UIViewController {
         webViewScrollView?.showsHorizontalScrollIndicator = false
         webViewScrollView?.showsVerticalScrollIndicator = true
         
-        // Set content inset adjustment behavior to prevent content going under safe areas
+        // Adjust scroll behavior to handle content properly
         if #available(iOS 11.0, *) {
-            webViewScrollView?.contentInsetAdjustmentBehavior = .never
+            // This is crucial to prevent content from going under status bar
+            webViewScrollView?.contentInsetAdjustmentBehavior = .scrollableAxes
         }
         
         // Disable zooming for KYC verification flow
@@ -89,14 +90,20 @@ class CFKycVerificationViewController: UIViewController {
         // Add activity indicator
         view.addSubview(activityIndicator)
         
-        // Updated constraints:
-        // - Top respects safe area
-        // - Left and right go to the edge
-        // - Bottom now respects safe area to prevent going outside the screen
+        // Set up constraints based on the Interface Builder layout
+        // We want to match the visual layout but fix the scrolling issues
         NSLayoutConstraint.activate([
-            kycWebView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            // Center horizontally (matching Web View.centerX = centerX)
+            kycWebView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            // Full width (matching Web View.leading = Safe Area.leading)
             kycWebView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             kycWebView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            // Top to top edge of screen (full screen, not safe area)
+            kycWebView.topAnchor.constraint(equalTo: view.topAnchor),
+            
+            // Bottom with the Safe Area (to prevent going under home indicator)
             kycWebView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             
             // Center the activity indicator
@@ -142,12 +149,6 @@ class CFKycVerificationViewController: UIViewController {
         
         // Ensure navigation bar is hidden when returning to this view
         navigationController?.setNavigationBarHidden(true, animated: animated)
-        
-        // Adjust safe area insets to prevent content from going under system UI
-        if #available(iOS 11.0, *) {
-            // Update content insets to match safe area
-            webViewScrollView?.contentInset = view.safeAreaInsets
-        }
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -160,10 +161,7 @@ class CFKycVerificationViewController: UIViewController {
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
         
-        if #available(iOS 11.0, *) {
-            // Update content insets when safe area changes (e.g., orientation changes)
-            webViewScrollView?.contentInset = view.safeAreaInsets
-        }
+        // No manual adjustments needed - let the system handle it with contentInsetAdjustmentBehavior
     }
     
     deinit {
