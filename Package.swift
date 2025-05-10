@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:6.0
 
 import PackageDescription
 
@@ -16,14 +16,13 @@ let package = Package(
         .target(
             name: "KycVerificationSdk",
             resources: [
-                // Include all XIB files
-                .process("**/*.xib"),
-                // And also include any storyboard files
-                .process("**/*.storyboard")
+                // Only use one rule for the XIB file to avoid duplicates
+                .process("view/vkyc/CFKycVerificationViewController.xib")
             ],
             swiftSettings: [
-                .define("SWIFT_SUPPRESS_WARNINGS")
+                .define("SWIFT_SUPPRESS_WARNINGS"),
+                .define("SWIFT_PACKAGE")
             ]),
     ],
-    swiftLanguageVersions: [.v5]
+    swiftLanguageModes: [.v5]
 )

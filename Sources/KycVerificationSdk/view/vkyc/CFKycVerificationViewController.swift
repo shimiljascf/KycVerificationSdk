@@ -23,7 +23,23 @@ class CFKycVerificationViewController: UIViewController {
         self.url = url
         self.accessToken = accessToken
         self.responseDelegate = delegate
+        
+        #if SWIFT_PACKAGE
+        // Using Bundle.module for Swift Package Manager builds
+        let nibName = "CFKycVerificationViewController"
+        let bundle = Bundle.module
+        
+        // Add minimal diagnostic info
+        print("Loading \(nibName).xib from Bundle.module")
+        if let resources = bundle.urls(forResourcesWithExtension: "xib", subdirectory: nil) {
+            print("Available XIBs in bundle: \(resources.map { $0.lastPathComponent })")
+        }
+        
+        super.init(nibName: nibName, bundle: bundle)
+        #else
+        // Use standard bundle lookup for non-SPM builds
         super.init(nibName: "CFKycVerificationViewController", bundle: Bundle(for: CFKycVerificationViewController.self))
+        #endif
     }
 
     required init?(coder: NSCoder) {
@@ -99,4 +115,3 @@ extension CFKycVerificationViewController: WKNavigationDelegate, WKUIDelegate {
         webViewManager.load(url: url)
     }
 }
-
