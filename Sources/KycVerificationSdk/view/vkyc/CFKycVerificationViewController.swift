@@ -318,10 +318,30 @@ class CFKycVerificationViewController: UIViewController {
     
     // Helper method to fix content size issues
     private func applyContentSizeFixesToWebView() {
+        // Add proper padding to ensure content at bottom is visible (especially footers)
         let js = """
-        var style = document.createElement('style');
-        style.textContent = 'body { width: 100%; height: auto; margin: 0; padding: 0; overflow-x: hidden; } html { overflow-x: hidden; }';
-        document.getElementsByTagName('head')[0].appendChild(style);
+        (function() {
+            // Create style element for general fixes
+            var style = document.createElement('style');
+            style.textContent = 'body { width: 100%; height: auto; margin: 0; padding: 0 0 50px 0; overflow-x: hidden; } html { overflow-x: hidden; }';
+            document.getElementsByTagName('head')[0].appendChild(style);
+            
+            // Add padding to any footer or bottom elements
+            var footerElements = document.querySelectorAll('[class*="footer"], [id*="footer"], [class*="bottom"], [id*="bottom"], [class*="powered"], [id*="powered"]');
+            for (var i = 0; i < footerElements.length; i++) {
+                footerElements[i].style.marginBottom = '50px';
+            }
+            
+            // Add observer to handle dynamic content
+            var observer = new MutationObserver(function(mutations) {
+                var footerElements = document.querySelectorAll('[class*="footer"], [id*="footer"], [class*="bottom"], [id*="bottom"], [class*="powered"], [id*="powered"]');
+                for (var i = 0; i < footerElements.length; i++) {
+                    footerElements[i].style.marginBottom = '50px';
+                }
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
+        })();
         """
         kycWebView.evaluateJavaScript(js, completionHandler: nil)
         
