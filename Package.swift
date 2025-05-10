@@ -23,5 +23,5 @@ let package = Package(
                 .unsafeFlags(["-swift-version", "5.3"])
             ]),
     ],
-    swiftLanguageVersions: [.v4,.v5] // This specifies compatible Swift versions
+    swiftLanguageVersions: [.v5] // This specifies compatible Swift versions
 )
