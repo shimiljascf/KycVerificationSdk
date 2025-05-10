@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "KycVerificationSdk",
     platforms: [
-        .iOS(.v13)  // Specify your minimum deployment target
+        .iOS(.v13)
     ],
     products: [
         .library(
@@ -16,15 +16,14 @@ let package = Package(
         .target(
             name: "KycVerificationSdk",
             resources: [
-                // Include all resources in the vkyc directory
-                .process("KycVerificationSdk/vkyc"),
-                // Also specifically include the NIB file that's causing the error
-                .process("KycVerificationSdk/vkyc/CFKycVerificationViewController.xib")
+                // Include all XIB files
+                .process("**/*.xib"),
+                // And also include any storyboard files
+                .process("**/*.storyboard")
             ],
             swiftSettings: [
                 .define("SWIFT_SUPPRESS_WARNINGS")
-                // Removed the unsafe flags that were causing the error
             ]),
     ],
-    swiftLanguageVersions: [.v5] // This specifies compatible Swift versions
+    swiftLanguageVersions: [.v5]
 )
